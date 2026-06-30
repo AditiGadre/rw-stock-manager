@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rastafari Wellness — Stock Manager</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --green:#2d5a27;--green-light:#3d7a35;--green-pale:#eaf3de;
+    --yellow:#e8a020;--yellow-pale:#faeeda;
+    --red:#c0392b;--red-pale:#fcebeb;
+    --bg:#f7f8f5;--surface:#ffffff;--surface2:#f0f2ed;
+    --text:#1a1f18;--text2:#52574f;--text3:#8a9085;
+    --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+    --radius:8px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  }
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* Header */
+  .header{background:var(--green);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo-mark{width:32px;height:32px;background:#e8a020;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .logo-mark i{color:#fff;font-size:16px}
+  .brand-name{color:#fff;font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .brand-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:1px}
+  .header-right{display:flex;align-items:center;gap:10px}
+  .date-badge{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.18)}
+  .reset-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+  .reset-btn:hover{background:rgba(255,255,255,.2)}
+
+  /* Main */
+  .main{max-width:1280px;margin:0 auto;padding:1.5rem 2rem 3rem}
+
+  /* KPI row */
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem}
+  .kpi{background:var(--surface);border-radius:12px;padding:14px 16px;border:0.5px solid var(--border);box-shadow:var(--shadow)}
+  .kpi .lbl{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+  .kpi .val{font-size:26px;font-weight:600;color:var(--text);line-height:1}
+  .kpi .val.green{color:var(--green)}
+  .kpi .val.yellow{color:var(--yellow)}
+  .kpi .val.red{color:var(--red)}
+  .kpi .trend{font-size:11px;color:var(--text3);margin-top:4px}
+
+  /* Toolbar */
+  .toolbar{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+  .toolbar input[type=text]{flex:1;min-width:180px;padding:8px 12px 8px 36px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+  .toolbar input[type=text]:focus{border-color:var(--green)}
+  .search-wrap{position:relative;flex:1;min-width:180px}
+  .search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none}
+  .toolbar select{padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer}
+  .toolbar select:focus{border-color:var(--green)}
+  .tab-group{display:flex;background:var(--surface2);border-radius:var(--radius);padding:3px;gap:2px}
+  .tab-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+  .tab-btn.active{background:var(--surface);color:var(--green);box-shadow:var(--shadow)}
+
+  /* Table */
+  .tbl-card{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:var(--surface2);color:var(--text3);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:9px 14px;text-align:left;border-bottom:0.5px solid var(--border);white-space:nowrap}
+  td{padding:9px 14px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafbf8}
+  .product-name{font-size:12px;font-weight:500;color:var(--text);line-height:1.3}
+  .product-meta{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* Badges */
+  .badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+  .badge-ok{background:var(--green-pale);color:var(--green)}
+  .badge-low{background:var(--yellow-pale);color:#8a5f0a}
+  .badge-out{background:var(--red-pale);color:var(--red)}
+
+  /* Stock input */
+  .stock-wrap{display:flex;align-items:center;gap:6px}
+  .stock-input{width:72px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;font-weight:500;text-align:center;color:var(--text);background:var(--bg);outline:none;transition:border .15s}
+  .stock-input:focus{border-color:var(--green);background:var(--surface)}
+  .save-btn{padding:4px 10px;border-radius:var(--radius);border:0.5px solid var(--green);background:transparent;color:var(--green);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .save-btn:hover{background:var(--green);color:#fff}
+
+  /* Progress bar */
+  .bar-outer{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;min-width:60px}
+  .bar-inner{height:100%;border-radius:3px;transition:width .4s ease}
+
+  /* Days left */
+  .days-chip{font-size:11px;font-weight:500;color:var(--text2)}
+  .days-chip.low{color:#8a5f0a}
+  .days-chip.out{color:var(--red)}
+
+  /* Chart section */
+  .section-title{font-size:13px;font-weight:600;color:var(--text2);margin:1.5rem 0 0.75rem;display:flex;align-items:center;gap:6px}
+  .chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+  .chart-card{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);box-shadow:var(--shadow);padding:1.25rem}
+  .chart-card h3{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+
+  /* Toast */
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;font-size:13px;font-weight:500;padding:10px 18px;border-radius:var(--radius);opacity:0;transition:opacity .25s;pointer-events:none;display:flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+
+  /* Export btn */
+  .export-btn{padding:7px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+  .export-btn:hover{background:var(--green-light)}
+
+  /* Empty state */
+  .empty{text-align:center;padding:3rem;color:var(--text3)}
+  .empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.4}
+
+  /* Responsive */
+  @media(max-width:900px){
+    .kpi-row{grid-template-columns:repeat(3,1fr)}
+    .chart-grid{grid-template-columns:1fr}
+    .main{padding:1rem}
+    th.hide-sm,td.hide-sm{display:none}
+  }
+  @media(max-width:600px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .header{padding:0 1rem}
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo-mark"><i class="ti ti-leaf"></i></div>
+    <div>
+      <div class="brand-name">Rastafari Wellness</div>
+      <div class="brand-sub">Stock Manager</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="date-badge" id="today-label"></div>
+    <button class="reset-btn" onclick="resetAll()"><i class="ti ti-refresh"></i> Reset all</button>
+    <button class="export-btn" onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <div class="kpi-row" id="kpi-row"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input type="text" id="search" placeholder="Search product…" oninput="renderTable()">
+    </div>
+    <select id="flavor-filter" onchange="renderTable()">
+      <option value="">All flavors</option>
+    </select>
+    <select id="pack-filter" onchange="renderTable()">
+      <option value="">All pack sizes</option>
+    </select>
+    <select id="sort-sel" onchange="renderTable()">
+      <option value="sold">Sort: most sold</option>
+      <option value="stock">Sort: stock (low first)</option>
+      <option value="days">Sort: days left</option>
+      <option value="name">Sort: A–Z</option>
+    </select>
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="setTab('all',this)">All</button>
+      <button class="tab-btn" onclick="setTab('low',this)">Low stock</button>
+      <button class="tab-btn" onclick="setTab('out',this)">Out of stock</button>
+    </div>
+  </div>
+
+  <div class="tbl-card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28%">Product</th>
+          <th class="hide-sm" style="width:9%">Flavor</th>
+          <th style="width:6%">Pack</th>
+          <th style="width:8%">May sold</th>
+          <th class="hide-sm" style="width:7%">Avg/day</th>
+          <th style="width:10%">In stock</th>
+          <th class="hide-sm" style="width:8%">Days left</th>
+          <th style="width:9%">Status</th>
+          <th class="hide-sm" style="width:10%">Level</th>
+          <th style="width:5%">Save</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title"><i class="ti ti-chart-bar" style="color:var(--green)"></i> May 2026 — sales overview</div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3><i class="ti ti-packages" style="color:var(--green)"></i> Top 12 products by units sold</h3>
+      <div style="position:relative;width:100%;height:300px">
+        <canvas id="salesChart" role="img" aria-label="Bar chart of top 12 products by units sold in May 2026"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3><i class="ti ti-chart-pie" style="color:var(--yellow)"></i> Sales by flavor</h3>
+      <div style="position:relative;width:100%;height:300px">
+        <canvas id="flavorChart" role="img" aria-label="Pie chart of sales share by flavor"></canvas>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"><i class="ti ti-check"></i> <span id="toast-msg">Stock updated</span></div>
+
+<script>
+const DAYS = 31;
+const LOW_DAYS = 5;
+const STORAGE_KEY = 'rw_stock_v3';
+
+const PRODUCTS = [
+  {name:"Strawberry Relax & Reset Gummies 7% – Pack of 5",flavor:"Strawberry",pack:"5",sold:542,price:1499},
+  {name:"Mango Relax & Reset Gummies 7% – Pack of 5",flavor:"Mango",pack:"5",sold:380,price:1499},
+  {name:"Strawberry Relax & Reset Gummies 5% – Pack of 5",flavor:"Strawberry",pack:"5",sold:311,price:999},
+  {name:"Mango Relax & Reset Gummies 5% – Pack of 5",flavor:"Mango",pack:"5",sold:220,price:999},
+  {name:"Orange Relax & Reset Gummies 7% – Pack of 5",flavor:"Orange",pack:"5",sold:232,price:1499},
+  {name:"Strawberry Relax & Reset Gummies 7% – Pack of 10",flavor:"Strawberry",pack:"10",sold:253,price:2799},
+  {name:"Mango Relax & Reset Gummies 7% – Pack of 10",flavor:"Mango",pack:"10",sold:208,price:2799},
+  {name:"Strawberry Relax & Reset Gummies 3.5% – Pack of 5",flavor:"Strawberry",pack:"5",sold:193,price:799},
+  {name:"Mixed Flavour Wellness Gummies 5% – Pack of 5",flavor:"Mixed",pack:"5",sold:179,price:999},
+  {name:"Orange Relax & Reset Gummies 7% – Pack of 10",flavor:"Orange",pack:"10",sold:163,price:2799},
+  {name:"Orange Relax & Reset Gummies 5% – Pack of 5",flavor:"Orange",pack:"5",sold:135,price:999},
+  {name:"Mixed Flavour Wellness Gummies – Pack of 5",flavor:"Mixed",pack:"5",sold:129,price:999},
+  {name:"Kala Khatta Relax & Reset Gummies 5% – Pack of 5",flavor:"Kala Khatta",pack:"5",sold:78,price:999},
+  {name:"Kala Khatta Relax & Reset Gummies – Pack of 5",flavor:"Kala Khatta",pack:"5",sold:65,price:799},
+  {name:"Strawberry Relax & Reset Gummies 5% – Pack of 10",flavor:"Strawberry",pack:"10",sold:94,price:1899},
+  {name:"Mango Relax & Reset Gummies 5% – Pack of 10",flavor:"Mango",pack:"10",sold:94,price:1899},
+  {name:"Mixed Flavour Wellness Gummies 5% – Pack of 10",flavor:"Mixed",pack:"10",sold:86,price:1899},
+  {name:"Orange Relax & Reset Gummies 5% – Pack of 10",flavor:"Orange",pack:"10",sold:58,price:1899},
+  {name:"Cappuccino Relax & Reset Gummies 5% – Pack of 5",flavor:"Cappuccino",pack:"5",sold:53,price:799},
+  {name:"Mango Relax & Reset Gummies – Pack of 10",flavor:"Mango",pack:"10",sold:48,price:1899},
+  {name:"Strawberry Relax & Reset Gummies 3.5% – Pack of 10",flavor:"Strawberry",pack:"10",sold:44,price:1599},
+  {name:"Mixed Flavour Wellness Gummies – Pack of 10",flavor:"Mixed",pack:"10",sold:45,price:1899},
+  {name:"Cappuccino Relax & Reset Gummies – Pack of 5",flavor:"Cappuccino",pack:"5",sold:40,price:799},
+  {name:"Chocolate Relax & Reset Gummies 5% – Pack of 5",flavor:"Chocolate",pack:"5",sold:35,price:799},
+  {name:"Chocolate Relax & Reset Gummies – Pack of 5",flavor:"Chocolate",pack:"5",sold:35,price:799},
+  {name:"Kala Khatta Relax & Reset Gummies 5% – Pack of 10",flavor:"Kala Khatta",pack:"10",sold:34,price:1599},
+  {name:"Strawberry Relax & Reset Gummies 7% – Pack of 30",flavor:"Strawberry",pack:"30",sold:34,price:6499},
+  {name:"Mango Relax & Reset Gummies 7% – Pack of 30",flavor:"Mango",pack:"30",sold:30,price:6499},
+  {name:"Rastafari Wellness – Bold Shots (Pack of 3)",flavor:"Shot",pack:"3",sold:28,price:1499},
+  {name:"Cappuccino Relax & Reset Gummies 5% – Pack of 10",flavor:"Cappuccino",pack:"10",sold:26,price:1599},
+  {name:"Paan Relax & Reset Gummies 5% – Pack of 5",flavor:"Paan",pack:"5",sold:24,price:799},
+  {name:"Paan Relax & Reset Gummies – Pack of 5",flavor:"Paan",pack:"5",sold:20,price:799},
+  {name:"Kala Khatta Relax & Reset Gummies – Pack of 10",flavor:"Kala Khatta",pack:"10",sold:18,price:1599},
+  {name:"Orange Relax & Reset Gummies – Pack of 10",flavor:"Orange",pack:"10",sold:16,price:1899},
+  {name:"Chocolate Relax & Reset Gummies 5% – Pack of 10",flavor:"Chocolate",pack:"10",sold:15,price:1599},
+  {name:"Mixed Flavour Wellness Gummies 5% – Pack of 30",flavor:"Mixed",pack:"30",sold:14,price:5999},
+  {name:"Mango Relax & Reset Gummies 5% – Pack of 30",flavor:"Mango",pack:"30",sold:7,price:5999},
+  {name:"Orange Relax & Reset Gummies 7% – Pack of 30",flavor:"Orange",pack:"30",sold:11,price:6499},
+  {name:"Cappuccino Relax & Reset Gummies – Pack of 10",flavor:"Cappuccino",pack:"10",sold:8,price:1599},
+  {name:"Mixed Flavour Wellness Gummies – Pack of 30",flavor:"Mixed",pack:"30",sold:9,price:5999},
+  {name:"Strawberry Relax & Reset Gummies 5% – Pack of 30",flavor:"Strawberry",pack:"30",sold:7,price:5999},
+  {name:"Mango Relax & Reset Gummies – Pack of 30",flavor:"Mango",pack:"30",sold:6,price:5999},
+  {name:"Chocolate Relax & Reset Gummies – Pack of 10",flavor:"Chocolate",pack:"10",sold:6,price:1599},
+  {name:"Full Spectrum Vijaya Oil – Peppermint – 6500 mg",flavor:"Oil",pack:"1",sold:3,price:4999},
+  {name:"Full Spectrum Vijaya Oil – Peppermint – 4500 mg",flavor:"Oil",pack:"1",sold:4,price:3999},
+];
+
+function loadStock(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch(e){return{}}}
+function persistStock(k,v){const d=loadStock();d[k]=v;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}catch(e){}}
+function getStock(name){
+  const d=loadStock();
+  if(d[name]!==undefined)return parseInt(d[name])||0;
+  const p=PRODUCTS.find(r=>r.name===name);
+  return p?Math.ceil(p.sold/DAYS)*14:0;
+}
+function avgPerDay(sold){return Math.max(1,Math.ceil(sold/DAYS))}
+function daysLeft(stock,avg){return avg>0?Math.floor(stock/avg):999}
+function getStatus(stock,avg){
+  if(stock<=0)return'out';
+  const d=daysLeft(stock,avg);
+  return d<=LOW_DAYS?'low':'ok';
+}
+
+let currentTab='all';
+function setTab(t,el){
+  currentTab=t;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderTable();
+}
+
+function renderKPI(){
+  const data=PRODUCTS.map(p=>({stock:getStock(p.name),avg:avgPerDay(p.sold),sold:p.sold,price:p.price}));
+  const total=PRODUCTS.length;
+  const totalSold=PRODUCTS.reduce((a,p)=>a+p.sold,0);
+  const revenue=PRODUCTS.reduce((a,p)=>a+p.sold*p.price,0);
+  const out=data.filter(d=>d.stock<=0).length;
+  const low=data.filter(d=>d.stock>0&&getStatus(d.stock,d.avg)==='low').length;
+  document.getElementById('kpi-row').innerHTML=`
+    <div class="kpi"><div class="lbl"><i class="ti ti-packages"></i> Total SKUs</div><div class="val">${total}</div><div class="trend">across all flavors & packs</div></div>
+    <div class="kpi"><div class="lbl"><i class="ti ti-shopping-cart"></i> May units sold</div><div class="val green">${totalSold.toLocaleString()}</div><div class="trend">${DAYS} days • ${Math.ceil(totalSold/DAYS)}/day avg</div></div>
+    <div class="kpi"><div class="lbl"><i class="ti ti-currency-rupee"></i> May revenue</div><div class="val green">₹${(revenue/100000).toFixed(1)}L</div><div class="trend">estimated gross</div></div>
+    <div class="kpi"><div class="lbl"><i class="ti ti-alert-triangle"></i> Low stock</div><div class="val yellow">${low}</div><div class="trend">≤${LOW_DAYS} days remaining</div></div>
+    <div class="kpi"><div class="lbl"><i class="ti ti-circle-x"></i> Out of stock</div><div class="val ${out>0?'red':'green'}">${out}</div><div class="trend">${out>0?'needs restock':'all stocked'}</div></div>
+  `;
+}
+
+function renderTable(){
+  renderKPI();
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const flv=document.getElementById('flavor-filter').value;
+  const pk=document.getElementById('pack-filter').value;
+  const srt=document.getElementById('sort-sel').value;
+
+  let rows=PRODUCTS.map(p=>{
+    const stock=getStock(p.name);
+    const avg=avgPerDay(p.sold);
+    const status=getStatus(stock,avg);
+    const dl=daysLeft(stock,avg);
+    return{...p,stock,avg,status,dl};
+  });
+
+  if(currentTab==='low')rows=rows.filter(r=>r.status==='low');
+  if(currentTab==='out')rows=rows.filter(r=>r.status==='out');
+  if(q)rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.flavor.toLowerCase().includes(q));
+  if(flv)rows=rows.filter(r=>r.flavor===flv);
+  if(pk)rows=rows.filter(r=>r.pack===pk);
+
+  if(srt==='sold')rows.sort((a,b)=>b.sold-a.sold);
+  else if(srt==='stock')rows.sort((a,b)=>a.stock-b.stock);
+  else if(srt==='days')rows.sort((a,b)=>a.dl-b.dl);
+  else if(srt==='name')rows.sort((a,b)=>a.name.localeCompare(b.name));
+
+  const maxStock=Math.max(...PRODUCTS.map(p=>getStock(p.name)),1);
+
+  const statusConfig={
+    ok:{cls:'badge-ok',label:'In stock',bar:'#2d5a27'},
+    low:{cls:'badge-low',label:'Low',bar:'#e8a020'},
+    out:{cls:'badge-out',label:'Out',bar:'#c0392b'},
+  };
+
+  const tbody=document.getElementById('tbl-body');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><i class="ti ti-search-off"></i>No products match your filters</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=rows.map((r,i)=>{
+    const sc=statusConfig[r.status];
+    const pct=Math.round(Math.min(100,r.stock/maxStock*100));
+    const shortName=r.name.replace(/ Relax & Reset Gummies/g,'').replace(/ Wellness Gummies/g,'').replace(/ – Pack of \d+.*/,'').replace(/ - Pack of \d+.*/,'').trim();
+    const dlLabel=r.stock<=0?'—':r.dl>=999?'∞':`${r.dl}d`;
+    const dlCls=r.status==='out'?'out':r.status==='low'?'low':'';
+    return`<tr>
+      <td>
+        <div class="product-name">${shortName}</div>
+        <div class="product-meta">${r.flavor} · Pack of ${r.pack}</div>
+      </td>
+      <td class="hide-sm" style="color:var(--text2);font-size:12px">${r.flavor}</td>
+      <td style="text-align:center;font-weight:500">${r.pack}</td>
+      <td style="text-align:center;font-weight:600;color:var(--green)">${r.sold}</td>
+      <td class="hide-sm" style="text-align:center;color:var(--text2)">${r.avg}</td>
+      <td>
+        <div class="stock-wrap">
+          <input class="stock-input" type="number" min="0" id="inp_${i}" value="${r.stock}" aria-label="Stock for ${r.name}">
+        </div>
+      </td>
+      <td class="hide-sm"><span class="days-chip ${dlCls}">${dlLabel}</span></td>
+      <td><span class="badge ${sc.cls}">${sc.label}</span></td>
+      <td class="hide-sm">
+        <div class="bar-outer">
+          <div class="bar-inner" style="width:${pct}%;background:${sc.bar}"></div>
+        </div>
+      </td>
+      <td><button class="save-btn" onclick="saveRow('${r.name.replace(/'/g,"\\'")}',${i})">Save</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function saveRow(name,idx){
+  const inp=document.getElementById(`inp_${idx}`);
+  if(!inp)return;
+  const v=Math.max(0,parseInt(inp.value)||0);
+  inp.value=v;
+  persistStock(name,v);
+  renderTable();
+  showToast(`Stock updated for ${name.split('–')[0].trim()}`);
+}
+
+function resetAll(){
+  if(!confirm('Reset all stock to default estimates?'))return;
+  try{localStorage.removeItem(STORAGE_KEY)}catch(e){}
+  renderTable();
+  showToast('All stock reset to defaults');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.style.opacity=1;
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.opacity=0,2500);
+}
+
+function populateFilters(){
+  const flavors=[...new Set(PRODUCTS.map(r=>r.flavor))].sort();
+  const packs=[...new Set(PRODUCTS.map(r=>r.pack))].sort((a,b)=>parseInt(a)-parseInt(b));
+  const ff=document.getElementById('flavor-filter');
+  flavors.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;ff.appendChild(o);});
+  const pf=document.getElementById('pack-filter');
+  packs.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=`Pack of ${p}`;pf.appendChild(o);});
+}
+
+function renderCharts(){
+  const top12=[...PRODUCTS].sort((a,b)=>b.sold-a.sold).slice(0,12);
+  const labels=top12.map(r=>{
+    let n=r.name.replace(/ Relax & Reset Gummies/g,'').replace(/ Wellness Gummies/g,'');
+    n=n.replace(/ [–-] Pack of \d+.*/,'').trim();
+    return n.length>22?n.slice(0,22)+'…':n;
+  });
+
+  new Chart(document.getElementById('salesChart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{label:'Units sold',data:top12.map(r=>r.sold),backgroundColor:'#2d5a27',hoverBackgroundColor:'#3d7a35',borderRadius:4,borderSkipped:false}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} units`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},maxRotation:45,color:'#8a9085',autoSkip:false}},
+        y:{grid:{color:'#f0f2ed'},ticks:{font:{size:10},color:'#8a9085'},beginAtZero:true}
+      }
+    }
+  });
+
+  // Flavor pie
+  const flavorMap={};
+  PRODUCTS.forEach(p=>{flavorMap[p.flavor]=(flavorMap[p.flavor]||0)+p.sold;});
+  const sorted=Object.entries(flavorMap).sort((a,b)=>b[1]-a[1]);
+  const PALETTE=['#2d5a27','#e8a020','#c0392b','#1baf7a','#4a3aa7','#2a78d6','#e87ba4','#eb6834','#eda100','#73726c'];
+
+  new Chart(document.getElementById('flavorChart'),{
+    type:'doughnut',
+    data:{
+      labels:sorted.map(s=>s[0]),
+      datasets:[{data:sorted.map(s=>s[1]),backgroundColor:PALETTE,borderWidth:2,borderColor:'#ffffff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},padding:10,boxWidth:12,color:'#52574f'}},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} units (${Math.round(c.raw/PRODUCTS.reduce((a,p)=>a+p.sold,0)*100)}%)`}}
+      },
+      cutout:'60%'
+    }
+  });
+}
+
+function exportCSV(){
+  const rows=[['Product','Flavor','Pack','May Sold','Avg/Day','Current Stock','Days Left','Status']];
+  PRODUCTS.forEach(p=>{
+    const stock=getStock(p.name);
+    const avg=avgPerDay(p.sold);
+    const status=getStatus(stock,avg);
+    const dl=daysLeft(stock,avg);
+    rows.push([
+      `"${p.name}"`,p.flavor,p.pack,p.sold,avg,stock,
+      stock<=0?'Out':dl>=999?'999+':dl,
+      status==='ok'?'In Stock':status==='low'?'Low':'Out of Stock'
+    ]);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`rw_stock_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('CSV exported');
+}
+
+document.getElementById('today-label').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+populateFilters();
+renderTable();
+renderCharts();
+</script>
+</body>
+</html>
